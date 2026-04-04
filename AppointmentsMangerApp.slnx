@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="appointmentsmangerapp.client/appointmentsmangerapp.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="AppointmentsMangerApp.Server/AppointmentsMangerApp.Server.csproj" />
+</Solution>
