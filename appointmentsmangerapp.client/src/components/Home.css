@@ -34,6 +34,11 @@ textarea {
     border: 1px solid #dedbd2;
 }
 
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
 .small-title {
     margin: 0 0 8px;
     font-size: 12px;
@@ -229,23 +234,6 @@ th {
     text-align: center;
 }
 
-@media (max-width: 800px) {
-    .header {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    h1 {
-        font-size: 32px;
-    }
-
-    .stats,
-    .form-row,
-    .filters {
-        grid-template-columns: 1fr;
-    }
-}
-
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -302,3 +290,25 @@ th {
     .checkbox-label input {
         width: auto;
     }
+
+@media (max-width: 800px) {
+    .header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .header-buttons {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    .stats,
+    .form-row,
+    .filters {
+        grid-template-columns: 1fr;
+    }
+}

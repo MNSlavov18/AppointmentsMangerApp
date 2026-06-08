@@ -1,9 +1,11 @@
 ﻿using AppointmentsMangerApp.Server.Data.Models;
 using AppointmentsMangerApp.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AppointmentsMangerApp.Server.Controllers
 {
+    [Authorize]
     [Route("api/appointment")]
     [ApiController]
     public class AppointmentController : ControllerBase
@@ -15,21 +17,14 @@ namespace AppointmentsMangerApp.Server.Controllers
             _appointmentService = appointmentService;
         }
 
-        // GET: api/appointment
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointments()
         {
             List<Appointment> appointments = await _appointmentService.GetAllAsync();
 
-            if (appointments.Count == 0)
-            {
-                return NotFound("No data found.");
-            }
-
             return Ok(appointments);
         }
 
-        // GET: api/appointment/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Appointment>> GetAppointment(int id)
         {
@@ -43,7 +38,6 @@ namespace AppointmentsMangerApp.Server.Controllers
             return Ok(appointment);
         }
 
-        // POST: api/appointment/filters
         [HttpPost("filters")]
         public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointmentsByFilters(Filter filters)
         {
@@ -52,7 +46,6 @@ namespace AppointmentsMangerApp.Server.Controllers
             return Ok(appointments);
         }
 
-        // POST: api/appointment
         [HttpPost]
         public async Task<ActionResult<Appointment>> PostAppointment(Appointment appointment)
         {
@@ -71,7 +64,6 @@ namespace AppointmentsMangerApp.Server.Controllers
             }
         }
 
-        // PUT: api/appointment/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutAppointment(int id, Appointment appointment)
         {
@@ -91,7 +83,6 @@ namespace AppointmentsMangerApp.Server.Controllers
             }
         }
 
-        // DELETE: api/appointment/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAppointment(int id)
         {

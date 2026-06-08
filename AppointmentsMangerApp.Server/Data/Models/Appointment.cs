@@ -35,5 +35,9 @@ namespace AppointmentsMangerApp.Server.Data.Models
 
         [Range(1, 3)]
         public byte LevelOfImportance { get; set; } = 2;
+
+        public string UserId { get; set; } = string.Empty;
+
+        public ApplicationUser? User { get; set; }
     }
 }

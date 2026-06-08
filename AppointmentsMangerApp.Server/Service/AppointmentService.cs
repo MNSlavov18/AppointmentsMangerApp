@@ -1,4 +1,5 @@
-﻿using AppointmentsMangerApp.Server.Data;
+﻿using System.Security.Claims;
+using AppointmentsMangerApp.Server.Data;
 using AppointmentsMangerApp.Server.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,15 +8,22 @@ namespace AppointmentsMangerApp.Server.Services
     public class AppointmentService : IAppointmentService
     {
         private readonly AppDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AppointmentService(AppDbContext context)
+        public AppointmentService(
+            AppDbContext context,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<Appointment>> GetAllAsync()
         {
+            string userId = GetCurrentUserId();
+
             return await _context.Appointments
+                .Where(a => a.UserId == userId)
                 .OrderBy(a => a.AppointmentDate)
                 .ThenBy(a => a.Time)
                 .ToListAsync();
@@ -23,13 +31,18 @@ namespace AppointmentsMangerApp.Server.Services
 
         public async Task<Appointment?> GetByIdAsync(int id)
         {
+            string userId = GetCurrentUserId();
+
             return await _context.Appointments
-                .FirstOrDefaultAsync(a => a.ID == id);
+                .FirstOrDefaultAsync(a => a.ID == id && a.UserId == userId);
         }
 
         public async Task<List<Appointment>> GetByFiltersAsync(Filter filters)
         {
-            IQueryable<Appointment> query = _context.Appointments;
+            string userId = GetCurrentUserId();
+
+            IQueryable<Appointment> query = _context.Appointments
+                .Where(a => a.UserId == userId);
 
             if (filters.All)
             {
@@ -77,6 +90,8 @@ namespace AppointmentsMangerApp.Server.Services
 
         public async Task<Appointment> CreateAsync(Appointment appointment)
         {
+            string userId = GetCurrentUserId();
+
             NormalizeAppointment(appointment);
 
             List<string> validationErrors = ValidateAppointment(appointment, validatePastDate: true);
@@ -87,6 +102,7 @@ namespace AppointmentsMangerApp.Server.Services
             }
 
             appointment.ID = 0;
+            appointment.UserId = userId;
             appointment.CreatedDate = DateTime.Now;
             appointment.ModifiedDate = DateTime.Now;
             appointment.Deleted = false;
@@ -99,13 +115,15 @@ namespace AppointmentsMangerApp.Server.Services
 
         public async Task UpdateAsync(int id, Appointment appointment)
         {
+            string userId = GetCurrentUserId();
+
             if (id != appointment.ID)
             {
                 throw new ArgumentException("You are trying to modify the wrong appointment.");
             }
 
             Appointment? existingAppointment = await _context.Appointments
-                .FirstOrDefaultAsync(a => a.ID == id);
+                .FirstOrDefaultAsync(a => a.ID == id && a.UserId == userId);
 
             if (existingAppointment == null)
             {
@@ -141,8 +159,10 @@ namespace AppointmentsMangerApp.Server.Services
 
         public async Task SoftDeleteAsync(int id)
         {
+            string userId = GetCurrentUserId();
+
             Appointment? appointment = await _context.Appointments
-                .FirstOrDefaultAsync(a => a.ID == id);
+                .FirstOrDefaultAsync(a => a.ID == id && a.UserId == userId);
 
             if (appointment == null)
             {
@@ -153,6 +173,19 @@ namespace AppointmentsMangerApp.Server.Services
             appointment.ModifiedDate = DateTime.Now;
 
             await _context.SaveChangesAsync();
+        }
+
+        private string GetCurrentUserId()
+        {
+            string? userId = _httpContextAccessor.HttpContext?.User
+                .FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new UnauthorizedAccessException("User is not logged in.");
+            }
+
+            return userId;
         }
 
         private static List<string> ValidateAppointment(Appointment appointment, bool validatePastDate)

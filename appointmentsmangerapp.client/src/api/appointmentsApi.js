@@ -1,104 +1,64 @@
-const API_URL = '/api/appointment';
+const APPOINTMENT_API_URL = '/api/appointment';
 
-function toClientAppointment(appointment) {
-    return {
-        id: appointment.id ?? appointment.ID ?? 0,
-        title: appointment.title ?? appointment.Title ?? '',
-        description: appointment.description ?? appointment.Description ?? '',
-        createdDate: appointment.createdDate ?? appointment.CreatedDate ?? null,
-        modifiedDate: appointment.modifiedDate ?? appointment.ModifiedDate ?? null,
-        appointmentDate: appointment.appointmentDate ?? appointment.AppointmentDate ?? '',
-        address: appointment.address ?? appointment.Address ?? '',
-        time: appointment.time ?? appointment.Time ?? '',
-        isDone: appointment.isDone ?? appointment.IsDone ?? false,
-        deleted: appointment.deleted ?? appointment.Deleted ?? false,
-        levelOfImportance: appointment.levelOfImportance ?? appointment.LevelOfImportance ?? 2,
-    };
-}
-
-function toServerAppointment(appointment) {
-    return {
-        id: appointment.id ?? 0,
-        title: appointment.title ?? '',
-        description: appointment.description ?? '',
-        appointmentDate: appointment.appointmentDate ?? '',
-        address: appointment.address ?? '',
-        time: appointment.time ?? '',
-        isDone: appointment.isDone ?? false,
-        deleted: appointment.deleted ?? false,
-        levelOfImportance: Number(appointment.levelOfImportance ?? 2),
-    };
-}
-
-async function readResponse(response) {
-    const contentType = response.headers.get('content-type') ?? '';
-    const isJson = contentType.includes('json');
-    const raw = isJson ? await response.json() : await response.text();
-    let data = raw;
-
-    if (!isJson && typeof raw === 'string') {
-        try {
-            data = JSON.parse(raw);
-        }
-        catch {
-            data = raw;
-        }
+async function handleResponse(response) {
+    if (response.status === 401) {
+        throw new Error('Unauthorized. Please login again.');
     }
 
     if (!response.ok) {
-        const validationMessages = typeof data === 'object' && data !== null && data.errors
-            ? Object.values(data.errors)
-                .flat()
-                .filter(Boolean)
-            : [];
-
-        const message = validationMessages.length > 0
-            ? validationMessages.join(' ')
-            : typeof data === 'string'
-                ? data
-                : data?.detail || data?.title || data?.message || 'Request failed.';
-
-        throw new Error(message);
+        const text = await response.text();
+        throw new Error(text || 'Request failed.');
     }
 
-    return data;
+    const contentType = response.headers.get('content-type');
+
+    if (contentType && contentType.includes('application/json')) {
+        return response.json();
+    }
+
+    return response.text();
 }
 
 export async function listAppointments() {
-    const response = await fetch(API_URL);
-    const data = await readResponse(response);
-    return Array.isArray(data) ? data.map(toClientAppointment) : [];
+    const response = await fetch(APPOINTMENT_API_URL, {
+        method: 'GET',
+        credentials: 'include',
+    });
+
+    return handleResponse(response);
 }
 
 export async function createAppointment(appointment) {
-    const response = await fetch(API_URL, {
+    const response = await fetch(APPOINTMENT_API_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(toServerAppointment(appointment)),
+        credentials: 'include',
+        body: JSON.stringify(appointment),
     });
 
-    const data = await readResponse(response);
-    return typeof data === 'object' && data !== null ? toClientAppointment(data) : data;
+    return handleResponse(response);
 }
 
 export async function updateAppointment(id, appointment) {
-    const response = await fetch(`${API_URL}/${id}`, {
+    const response = await fetch(`${APPOINTMENT_API_URL}/${id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(toServerAppointment({ ...appointment, id })),
+        credentials: 'include',
+        body: JSON.stringify(appointment),
     });
 
-    return readResponse(response);
+    return handleResponse(response);
 }
 
 export async function deleteAppointment(id) {
-    const response = await fetch(`${API_URL}/${id}`, {
+    const response = await fetch(`${APPOINTMENT_API_URL}/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
     });
 
-    return readResponse(response);
+    return handleResponse(response);
 }

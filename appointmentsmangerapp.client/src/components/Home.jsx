@@ -46,7 +46,7 @@ function getStatusName(appointment) {
     return 'Active';
 }
 
-export default function Home() {
+export default function Home({ user, onLogout }) {
     const [appointments, setAppointments] = useState([]);
 
     const [searchText, setSearchText] = useState('');
@@ -70,8 +70,8 @@ export default function Home() {
             const data = await listAppointments();
             setAppointments(data);
         } catch (error) {
-            if (String(error.message).toLowerCase().includes('no data')) {
-                setAppointments([]);
+            if (error.message.includes('Unauthorized')) {
+                onLogout();
             } else {
                 setMessage(error.message || 'Could not load appointments.');
             }
@@ -198,13 +198,19 @@ export default function Home() {
                     <p className="small-title">Appointments Manager</p>
                     <h1>My appointments</h1>
                     <p className="subtitle">
-                        Create, edit, complete and delete your appointments.
+                        Logged in as <strong>{user.userName}</strong>
                     </p>
                 </div>
 
-                <button type="button" className="button" onClick={openCreateModal}>
-                    New appointment
-                </button>
+                <div className="header-buttons">
+                    <button type="button" className="button" onClick={openCreateModal}>
+                        New appointment
+                    </button>
+
+                    <button type="button" className="button secondary" onClick={onLogout}>
+                        Logout
+                    </button>
+                </div>
             </header>
 
             <section className="stats">
